@@ -1,0 +1,21 @@
+## Compilados / temporales de .NET
+bin/
+obj/
+publish_output/
+*.user
+
+## Configuración con secretos reales -- NUNCA se sube
+src/Touchliga.Api/appsettings.Production.json
+src/Touchliga.Api/appsettings.Development.json
+
+## IDs de VS/Rider
+.vs/
+.idea/
+
+## Archivos de trabajo (no son código)
+*.csv
+*.txt
+!README.md
+
+## Zip suelto de la herramienta generadora
+tools/Touchliga.ModuleGenerator/*.zip

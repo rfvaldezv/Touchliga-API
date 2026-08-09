@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Touchliga.Api/Touchliga.Api.csproj" />
+    <Project Path="src/Touchliga.Application/Touchliga.Application.csproj" />
+    <Project Path="src/Touchliga.Contracts/Touchliga.Contracts.csproj" />
+    <Project Path="src/Touchliga.Domain/Touchliga.Domain.csproj" />
+    <Project Path="src/Touchliga.Infrastructure/Touchliga.Infrastructure.csproj" />
+    <Project Path="src/Touchliga.Persistence/Touchliga.Persistence.csproj" />
+    <Project Path="src/Touchliga.Shared/Touchliga.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Touchliga.IntegrationTests/Touchliga.IntegrationTests.csproj" />
+    <Project Path="tests/Touchliga.UnitTests/Touchliga.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Touchliga.ModuleGenerator/Touchliga.ModuleGenerator.csproj" />
+  </Folder>
+</Solution>
