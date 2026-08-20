@@ -3,6 +3,7 @@ using Touchliga.Domain.Interfaces;
 using Touchliga.Domain.Exceptions;
 using Touchliga.Application.Commands.Pronostico.GuardarLote;
 using Touchliga.Application.Common.Interfaces;
+using Touchliga.Application.Common.Utils;
 using DomainEntity = Touchliga.Domain.Entities.Pronostico;
 
 namespace Touchliga.Application.Handlers.Pronostico.GuardarLote;
@@ -13,6 +14,7 @@ public sealed class GuardarPronosticosLoteCommandHandler : IRequestHandler<Guard
     private readonly IPartidoRepository _partidos;
     private readonly IJornadaRepository _jornadas;
     private readonly IUsuarioRepository _usuarios;
+    private readonly IEquipoRepository _equipos;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailService _email;
@@ -22,6 +24,7 @@ public sealed class GuardarPronosticosLoteCommandHandler : IRequestHandler<Guard
         IPartidoRepository partidos,
         IJornadaRepository jornadas,
         IUsuarioRepository usuarios,
+        IEquipoRepository equipos,
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUser,
         IEmailService email)
@@ -30,6 +33,7 @@ public sealed class GuardarPronosticosLoteCommandHandler : IRequestHandler<Guard
         _partidos = partidos;
         _jornadas = jornadas;
         _usuarios = usuarios;
+        _equipos = equipos;
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
         _email = email;
@@ -105,13 +109,41 @@ public sealed class GuardarPronosticosLoteCommandHandler : IRequestHandler<Guard
 
             if (usuario != null)
             {
-                var cuerpo = $"""
-                    <p>Hola {usuario.Nombre},</p>
-                    <p>Confirmamos que tus pronósticos para la <strong>{jornada.Nombre}</strong> quedaron registrados completos ({partidoIds.Count} de {partidoIds.Count} partidos).</p>
-                    <p>Si necesitas corregir alguno, puedes hacerlo desde la app mientras la jornada siga abierta.</p>
-                    <p>¡Mucha suerte! ⚽</p>
-                    <p style="color:#888;font-size:12px;">Touchliga — Pasión que nos une</p>
-                    """;
+                // Se traen TODOS sus pronósticos de la jornada (no solo
+                // los de este lote) -- si los fue guardando en varias
+                // veces, el comprobante debe mostrar el registro
+                // completo, no nada más lo último que tocó.
+                var todosLosPronosticos = (await _pronosticos.ObtenerPorPartidoIdsAsync(partidoIds, cancellationToken))
+                    .Where(p => p.UsuarioId == usuarioId)
+                    .ToDictionary(p => p.PartidoId);
+
+                var equipos = (await _equipos.ObtenerTodosAsync(cancellationToken)).ToDictionary(e => e.Id);
+
+                var detalles = partidosDeLaJornada
+                    .OrderBy(p => p.Id)
+                    .Where(p => todosLosPronosticos.ContainsKey(p.Id))
+                    .Select(p =>
+                    {
+                        var pronostico = todosLosPronosticos[p.Id];
+                        var nombreLocal = equipos.TryGetValue(p.EquipoLocalId, out var local) ? local.Nombre : "?";
+                        var nombreVisitante = equipos.TryGetValue(p.EquipoVisitanteId, out var visitante) ? visitante.Nombre : "?";
+                        var nombreGanador = equipos.TryGetValue(pronostico.EquipoGanadorId, out var ganador) ? ganador.Nombre : "?";
+
+                        var prediccion = p.EsDesempate
+                            ? $"Gana {nombreGanador} ⭐ ({pronostico.PuntosTotalesPredichos}/{pronostico.DiferenciaPuntosPredicha})"
+                            : $"Gana {nombreGanador}";
+
+                        return (
+                            equipoLocal: nombreLocal,
+                            equipoVisitante: nombreVisitante,
+                            prediccion: prediccion);
+                    })
+                    .ToList();
+
+                var cuerpo = PlantillaCorreoParticipante.PronosticosConfirmados(
+                    nombre: usuario.Nombre,
+                    nombreJornada: jornada.Nombre,
+                    detalles: detalles);
 
                 await _email.EnviarAsync(
                     usuario.Correo.Value,

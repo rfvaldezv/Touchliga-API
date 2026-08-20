@@ -11,6 +11,7 @@ using Touchliga.Application.Communication.Queries.GetConversacion;
 using Touchliga.Application.Communication.Queries.GetMisContactos;
 using Touchliga.Application.Communication.Queries.GetOrganizadores;
 using Touchliga.Application.Communication.Queries.GetTodosLosParticipantes;
+using Touchliga.Application.Communication.Queries.GetMensajesNoLeidos;
 
 namespace Touchliga.Api.Controllers;
 
@@ -35,6 +36,14 @@ public sealed class MensajesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ContactoDto>>> GetMisContactos()
     {
         return Ok(await _mediator.Send(new GetMisContactosQuery()));
+    }
+
+    /// <summary>Total de mensajes sin leer del usuario actual --
+    /// para el globo/badge en la barra de navegación.</summary>
+    [HttpGet("no-leidos")]
+    public async Task<ActionResult<int>> GetNoLeidos()
+    {
+        return Ok(await _mediator.Send(new GetMensajesNoLeidosQuery()));
     }
 
     [HttpGet("organizadores")]

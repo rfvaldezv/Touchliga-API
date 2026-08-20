@@ -46,6 +46,25 @@ public sealed class Usuario : AggregateRoot
 
     public string? FotoUrl { get; private set; }
 
+    /// <summary>Vínculo opcional a otro participante (esposo/esposa,
+    /// novio/novia, o cualquier persona con la que juega en pareja) --
+    /// puramente visual/informativo, no afecta pronósticos, puntos ni
+    /// login de ninguno de los 2. Se asigna desde Administración.</summary>
+    public long? ParejaId { get; private set; }
+
+    /// <summary>Apodo opcional para la pareja/equipo (ej. "Los
+    /// Tigres del Amor") -- se guarda igual en ambos participantes
+    /// vinculados, para mostrarse junto al ícono de pareja.</summary>
+    public string? NombreEquipo { get; private set; }
+
+    /// <summary>Cuando es true, este participante YA NO juega por su
+    /// cuenta -- su correo+contraseña originales quedaron copiados
+    /// como credencial alterna de OTRO participante, y es a esa otra
+    /// cuenta a donde debe entrar. El registro se conserva completo
+    /// (para mensajes, historial, etc.), solo deja de ser una vía de
+    /// login válida por sí misma.</summary>
+    public bool EsCuentaVinculada { get; private set; }
+
     public IReadOnlyCollection<UsuarioRol> Roles => _roles.AsReadOnly();
 
     public static Usuario Crear(
@@ -261,5 +280,28 @@ public sealed class Usuario : AggregateRoot
             x.Rol.Nombre.Equals(
                 nombreRol,
                 StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Vincula (o desvincula, pasando null) a este participante
+    /// con otro como pareja/equipo -- solo visual, sin efecto en
+    /// pronósticos, puntos o autenticación.</summary>
+    public void AsignarPareja(long? parejaId, string? nombreEquipo, long usuarioId)
+    {
+        if (parejaId == Id)
+            throw new DomainException("Un participante no puede ser pareja de sí mismo.");
+
+        ParejaId = parejaId;
+        NombreEquipo = parejaId is null ? null : (string.IsNullOrWhiteSpace(nombreEquipo) ? null : nombreEquipo.Trim());
+        MarcarModificado(usuarioId);
+    }
+
+    /// <summary>Marca (o desmarca) a este participante como cuenta
+    /// vinculada -- deja de ser una vía de login válida por sí misma,
+    /// su correo+contraseña originales pasaron a ser un segundo
+    /// acceso de otro participante.</summary>
+    public void MarcarComoVinculada(bool vinculada, long usuarioId)
+    {
+        EsCuentaVinculada = vinculada;
+        MarcarModificado(usuarioId);
     }
 }

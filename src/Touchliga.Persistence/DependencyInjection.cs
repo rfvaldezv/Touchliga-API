@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IPaisRepository, PaisRepository>();
         services.AddScoped<IEstadoRepository, EstadoRepository>();
         services.AddScoped<ICiudadRepository, CiudadRepository>();
+        services.AddScoped<IConfiguracionSmtpRepository, ConfiguracionSmtpRepository>();
+        services.AddScoped<ICredencialAlternaRepository, CredencialAlternaRepository>();
         services.AddScoped<ICanchaRepository, CanchaRepository>();
         services.AddScoped<ICategoriaRepository, CategoriaRepository>();
         // Arbitro removido -- Touchliga no lo usa (no hay concepto de "árbitros" a capturar aquí)

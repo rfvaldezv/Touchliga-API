@@ -40,6 +40,7 @@ public sealed class GetMisContactosQueryHandler
             {
                 UsuarioId = contactoId,
                 Nombre = contacto != null ? $"{contacto.Nombre} {contacto.Apellidos}" : "Usuario",
+                Telefono = contacto?.Telefono,
                 UltimoMensaje = string.IsNullOrWhiteSpace(m.Contenido) ? "📷 Imagen" : m.Contenido,
                 FechaUltimoMensaje = m.FechaEnvio,
                 TieneNoLeidos = !m.Leido && m.DestinatarioId == _currentUser.UserId,

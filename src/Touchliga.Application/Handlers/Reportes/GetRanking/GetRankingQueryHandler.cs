@@ -24,13 +24,16 @@ public sealed class GetRankingQueryHandler : IRequestHandler<GetRankingQuery, IR
         {
             UsuarioId = d.UsuarioId,
             Nombre = d.Nombre,
+            TienePareja = d.TienePareja,
+            NombreEquipo = d.NombreEquipo,
             Jornadas = d.Jornadas
                 .Select(j => new PuntosPorJornadaDto
                 {
                     JornadaId = j.JornadaId,
                     Numero = j.Numero,
                     Puntos = j.Puntos,
-                    Calificados = j.Calificados
+                    Calificados = j.Calificados,
+                    TodosLosPartidosConResultado = j.TodosLosPartidosConResultado
                 })
                 .ToList(),
             TotalPuntos = d.TotalPuntos,

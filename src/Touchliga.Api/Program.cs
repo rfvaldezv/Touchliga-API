@@ -14,6 +14,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 
+// Licencia gratuita de QuestPDF (Community) -- válida para este uso.
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers
@@ -114,9 +117,16 @@ builder.Services.AddCors(options =>
     options.AddPolicy("TouchligaWeb", policy =>
     {
         policy.SetIsOriginAllowed(origin =>
-                (Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.IsLoopback)
-                || origin == "https://app.touchliga.com"
-                || origin == "http://app.touchliga.com")
+            {
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+
+                var host = uri.Host.ToLowerInvariant();
+                var esLocal = host == "localhost" || host == "127.0.0.1" || host == "::1" || uri.IsLoopback;
+
+                return esLocal
+                    || origin == "https://app.touchliga.com"
+                    || origin == "http://app.touchliga.com";
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

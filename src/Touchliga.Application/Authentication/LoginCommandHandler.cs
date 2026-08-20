@@ -18,6 +18,8 @@ public sealed class LoginCommandHandler
 
     private readonly IJwtService _jwt;
 
+    private readonly ICredencialAlternaRepository _credencialesAlternas;
+
     public LoginCommandHandler(
 
         IUsuarioRepository usuarios,
@@ -26,7 +28,9 @@ public sealed class LoginCommandHandler
 
         IPasswordHasher passwordHasher,
 
-        IJwtService jwt)
+        IJwtService jwt,
+
+        ICredencialAlternaRepository credencialesAlternas)
     {
         _usuarios = usuarios;
 
@@ -35,6 +39,8 @@ public sealed class LoginCommandHandler
         _passwordHasher = passwordHasher;
 
         _jwt = jwt;
+
+        _credencialesAlternas = credencialesAlternas;
     }
 
     public async Task<LoginResponse> Handle(
@@ -46,19 +52,38 @@ public sealed class LoginCommandHandler
         var usuario =
             await _usuarios.ObtenerPorCorreoAsync(request.Correo);
 
-        if (usuario == null)
-            throw new DomainException(
-                "Usuario o contraseña incorrectos.");
+        // Login normal con la cuenta principal -- este camino se
+        // comporta EXACTAMENTE igual que antes, sin ningún cambio,
+        // salvo que una cuenta marcada como "vinculada" NUNCA cuenta
+        // como login principal válido, aunque el correo/contraseña
+        // técnicamente coincidan -- su correo+contraseña originales
+        // ahora solo funcionan a través de la credencial alterna que
+        // apunta a la cuenta real donde juega.
+        var esLoginPrincipalValido =
+            usuario != null &&
+            !usuario.EsCuentaVinculada &&
+            _passwordHasher.Verify(request.Password, usuario.PasswordHash);
 
-        if (!_passwordHasher.Verify(
-                request.Password,
-                usuario.PasswordHash))
+        if (!esLoginPrincipalValido)
         {
-            throw new DomainException(
-                "Usuario o contraseña incorrectos.");
+            // No coincidió como cuenta principal -- se revisa si el
+            // correo/contraseña corresponden a una credencial alterna
+            // (pareja/familiar que comparte la misma cuenta/puntos).
+            var credencialAlterna =
+                await _credencialesAlternas.ObtenerPorCorreoAsync(request.Correo, cancellationToken);
+
+            var esCredencialAlternaValida =
+                credencialAlterna != null &&
+                _passwordHasher.Verify(request.Password, credencialAlterna.PasswordHash);
+
+            if (!esCredencialAlternaValida)
+                throw new DomainException("Usuario o contraseña incorrectos.");
+
+            usuario = await _usuarios.ObtenerPorIdAsync(credencialAlterna!.UsuarioId)
+                ?? throw new DomainException("Usuario o contraseña incorrectos.");
         }
 
-        var roles = await _usuarioRoles.ObtenerRolesAsync(usuario.Id);
+        var roles = await _usuarioRoles.ObtenerRolesAsync(usuario!.Id);
         var nombresRoles = roles.Select(r => r.Rol.Nombre).ToList();
 
         var accessToken =

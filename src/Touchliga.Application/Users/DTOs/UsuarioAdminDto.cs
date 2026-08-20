@@ -20,6 +20,13 @@ public sealed class UsuarioAdminDto
     public long? InvitadoPorId { get; set; }
     public string? InvitadoPorNombre { get; set; }
 
+    public long? ParejaId { get; set; }
+    public string? ParejaNombre { get; set; }
+    public string? NombreEquipo { get; set; }
+
+    public string? CorreoAlterna { get; set; }
+    public bool EsCuentaVinculada { get; set; }
+
     public long? CiudadId { get; set; }
     public string? CiudadNombre { get; set; }
 

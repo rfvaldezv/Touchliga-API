@@ -42,9 +42,9 @@ public sealed class CapturarResultadoCommandHandler : IRequestHandler<CapturarRe
         var jornada = await _jornadas.ObtenerPorIdAsync(partido.JornadaId, cancellationToken)
             ?? throw new EntityNotFoundException("Jornada");
 
-        if (jornada.Cerrada)
-            throw new BusinessException("No se puede modificar el resultado de un partido cuya jornada ya está cerrada.");
-
+        // A propósito, sin restricción de jornada.Cerrada -- el
+        // resultado debe poder capturarse o corregirse en cualquier
+        // momento, sin importar el estatus de la jornada.
         partido.CapturarResultado(request.GolesLocal, request.GolesVisitante, _currentUser.UserId);
         _partidos.Actualizar(partido);
 

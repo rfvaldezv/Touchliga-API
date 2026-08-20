@@ -13,19 +13,22 @@ public sealed class GetUsuariosQueryHandler
     private readonly IPaisRepository _paises;
     private readonly IEstadoRepository _estados;
     private readonly IEquipoRepository _equipos;
+    private readonly ICredencialAlternaRepository _credencialesAlternas;
 
     public GetUsuariosQueryHandler(
         IUsuarioRepository usuarios,
         ICiudadRepository ciudades,
         IPaisRepository paises,
         IEstadoRepository estados,
-        IEquipoRepository equipos)
+        IEquipoRepository equipos,
+        ICredencialAlternaRepository credencialesAlternas)
     {
         _usuarios = usuarios;
         _ciudades = ciudades;
         _paises = paises;
         _estados = estados;
         _equipos = equipos;
+        _credencialesAlternas = credencialesAlternas;
     }
 
     public async Task<IReadOnlyList<UsuarioAdminDto>> Handle(
@@ -43,6 +46,8 @@ public sealed class GetUsuariosQueryHandler
         var equipos = (await _equipos.ObtenerTodosAsync(cancellationToken))
             .ToDictionary(e => e.Id, e => e.Nombre);
         var nombresPorUsuarioId = usuarios.ToDictionary(u => u.Id, u => u.Nombre + " " + u.Apellidos);
+        var credencialesAlternasPorUsuarioId = (await _credencialesAlternas.ObtenerTodasAsync(cancellationToken))
+            .ToDictionary(c => c.UsuarioId, c => c.Correo.Value);
 
         return usuarios.Select(u => new UsuarioAdminDto
         {
@@ -64,6 +69,13 @@ public sealed class GetUsuariosQueryHandler
             InvitadoPorNombre = u.InvitadoPorId.HasValue && nombresPorUsuarioId.TryGetValue(u.InvitadoPorId.Value, out var inv)
                 ? inv
                 : null,
+            ParejaId = u.ParejaId,
+            ParejaNombre = u.ParejaId.HasValue && nombresPorUsuarioId.TryGetValue(u.ParejaId.Value, out var par)
+                ? par
+                : null,
+            NombreEquipo = u.NombreEquipo,
+            CorreoAlterna = credencialesAlternasPorUsuarioId.TryGetValue(u.Id, out var correoAlt) ? correoAlt : null,
+            EsCuentaVinculada = u.EsCuentaVinculada,
             CiudadId = u.CiudadId,
             CiudadNombre = u.CiudadId.HasValue && ciudades.TryGetValue(u.CiudadId.Value, out var c) ? c : null,
             PaisId = u.PaisId,

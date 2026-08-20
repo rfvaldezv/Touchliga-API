@@ -9,6 +9,8 @@ public sealed class TouchligaDbContext : DbContext
     }
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+
+    public DbSet<CredencialAlterna> CredencialesAlternas => Set<CredencialAlterna>();
     public DbSet<Rol> Roles => Set<Rol>();
     public DbSet<Permiso> Permisos => Set<Permiso>();
     public DbSet<Sesion> Sesiones => Set<Sesion>();
@@ -35,6 +37,8 @@ public sealed class TouchligaDbContext : DbContext
     public DbSet<Patrocinador> Patrocinadores => Set<Patrocinador>();
     public DbSet<Pago> Pagos => Set<Pago>();
     public DbSet<ConfiguracionPremio> ConfiguracionesPremio => Set<ConfiguracionPremio>();
+
+    public DbSet<ConfiguracionSmtp> ConfiguracionesSmtp => Set<ConfiguracionSmtp>();
     public DbSet<PremioOtorgado> PremiosOtorgados => Set<PremioOtorgado>();
     public DbSet<Archivo> Archivos => Set<Archivo>();
     public DbSet<PushToken> PushTokens => Set<PushToken>();

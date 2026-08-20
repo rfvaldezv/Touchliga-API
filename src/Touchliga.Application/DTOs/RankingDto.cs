@@ -4,6 +4,8 @@ public sealed class RankingDto
 {
     public long UsuarioId { get; set; }
     public string Nombre { get; set; } = string.Empty;
+    public bool TienePareja { get; set; }
+    public string? NombreEquipo { get; set; }
     public List<PuntosPorJornadaDto> Jornadas { get; set; } = [];
     public int TotalPuntos { get; set; }
     public double PorcentajeProductividad { get; set; }
@@ -15,4 +17,5 @@ public sealed class PuntosPorJornadaDto
     public int Numero { get; set; }
     public int Puntos { get; set; }
     public int Calificados { get; set; }
+    public bool TodosLosPartidosConResultado { get; set; }
 }

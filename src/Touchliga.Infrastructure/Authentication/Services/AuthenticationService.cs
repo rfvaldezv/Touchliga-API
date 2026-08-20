@@ -14,6 +14,7 @@ public sealed class AuthenticationService : IAuthenticationService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICredencialAlternaRepository _credencialAlternaRepository;
 
     public AuthenticationService(
         IUsuarioRepository usuarioRepository,
@@ -22,7 +23,8 @@ public sealed class AuthenticationService : IAuthenticationService
         IUsuarioRolRepository usuarioRolRepository,
         IPasswordHasher passwordHasher,
         IJwtService jwtService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ICredencialAlternaRepository credencialAlternaRepository)
     {
                 _usuarioRepository = usuarioRepository;
                 _sesionRepository = sesionRepository;
@@ -31,6 +33,7 @@ public sealed class AuthenticationService : IAuthenticationService
                 _passwordHasher = passwordHasher;
                 _jwtService = jwtService;
                 _unitOfWork = unitOfWork;
+                _credencialAlternaRepository = credencialAlternaRepository;
     }
 
 public async Task<LoginResponse> LoginAsync(
@@ -40,16 +43,43 @@ public async Task<LoginResponse> LoginAsync(
 {
     var usuario = await _usuarioRepository.ObtenerPorCorreoAsync(correo);
 
+    // Login normal con la cuenta principal -- una cuenta marcada
+    // como "vinculada" NUNCA cuenta como login principal válido,
+    // aunque el correo/contraseña técnicamente coincidan -- su
+    // correo+contraseña originales ahora solo funcionan a través de
+    // la credencial alterna que apunta a la cuenta real donde juega.
+    var esLoginPrincipalValido =
+        usuario != null &&
+        !usuario.EsCuentaVinculada &&
+        _passwordHasher.Verify(password, usuario.PasswordHash);
+
+    if (!esLoginPrincipalValido)
+    {
+        var credencialAlterna = await _credencialAlternaRepository.ObtenerPorCorreoAsync(correo, cancellationToken);
+
+        var esCredencialAlternaValida =
+            credencialAlterna != null &&
+            _passwordHasher.Verify(password, credencialAlterna.PasswordHash);
+
+        if (!esCredencialAlternaValida)
+            throw new UnauthorizedAccessException("Usuario o contraseña incorrectos.");
+
+        usuario = await _usuarioRepository.ObtenerPorIdAsync(credencialAlterna!.UsuarioId)
+            ?? throw new UnauthorizedAccessException("Usuario o contraseña incorrectos.");
+    }
+
     if (usuario is null)
-        throw new UnauthorizedAccessException("Usuario o contraseña incorrectos.");
-
-    var valido = _passwordHasher.Verify(password, usuario.PasswordHash);
-
-    if (!valido)
         throw new UnauthorizedAccessException("Usuario o contraseña incorrectos.");
 
     var usuarioRoles = await _usuarioRolRepository.ObtenerRolesAsync(usuario.Id);
     var nombresRoles = usuarioRoles.Select(ur => ur.Rol.Nombre).ToList();
+
+    // Si alguien está vinculado a esta cuenta, se muestra el nombre
+    // combinado -- "Pedro y Ximena" -- en vez de solo el del titular.
+    var nombreVinculado = await _credencialAlternaRepository.ObtenerNombreVinculadoAsync(usuario.Id, cancellationToken);
+    var nombreParaMostrar = nombreVinculado == null
+        ? usuario.Nombre
+        : $"{usuario.Nombre} y {nombreVinculado}";
 
     var sesion = Sesion.Crear(
         usuario.Id,
@@ -63,7 +93,7 @@ public async Task<LoginResponse> LoginAsync(
 
     var accessToken = _jwtService.GenerateAccessToken(
         usuario.Id,
-        usuario.Nombre,
+        nombreParaMostrar,
         usuario.Correo.Value,
         nombresRoles);
 
@@ -80,7 +110,7 @@ public async Task<LoginResponse> LoginAsync(
     return new LoginResponse
     {
         UsuarioId = usuario.Id,
-        Nombre = usuario.Nombre,
+        Nombre = nombreParaMostrar,
         Correo = usuario.Correo.Value,
         AccessToken = accessToken,
         RefreshToken = refreshToken.Token,
@@ -109,9 +139,14 @@ public async Task<LoginResponse> LoginAsync(
         var usuarioRoles = await _usuarioRolRepository.ObtenerRolesAsync(usuario.Id);
         var nombresRoles = usuarioRoles.Select(ur => ur.Rol.Nombre).ToList();
 
+        var nombreVinculado = await _credencialAlternaRepository.ObtenerNombreVinculadoAsync(usuario.Id, cancellationToken);
+        var nombreParaMostrar = nombreVinculado == null
+            ? usuario.Nombre
+            : $"{usuario.Nombre} y {nombreVinculado}";
+
         var accessToken = _jwtService.GenerateAccessToken(
             usuario.Id,
-            usuario.Nombre,
+            nombreParaMostrar,
             usuario.Correo.Value,
             nombresRoles);
 
@@ -128,7 +163,7 @@ public async Task<LoginResponse> LoginAsync(
         return new LoginResponse
         {
             UsuarioId = usuario.Id,
-            Nombre = usuario.Nombre,
+            Nombre = nombreParaMostrar,
             Correo = usuario.Correo.Value,
             AccessToken = accessToken,
             RefreshToken = nuevoRefreshToken.Token,

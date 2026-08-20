@@ -68,6 +68,14 @@ public sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.Property(x => x.FotoUrl)
             .HasMaxLength(500);
 
+        builder.Property(x => x.ParejaId);
+
+        builder.Property(x => x.NombreEquipo)
+            .HasMaxLength(100);
+
+        builder.Property(x => x.EsCuentaVinculada)
+            .HasDefaultValue(false);
+
         builder.HasOne<Equipo>()
             .WithMany()
             .HasForeignKey(x => x.EquipoFavoritoId)
@@ -77,6 +85,13 @@ public sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.HasOne<Usuario>()
             .WithMany()
             .HasForeignKey(x => x.InvitadoPorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Auto-referencia: con quién juega en pareja/equipo (opcional,
+        // solo visual -- ver comentario en la entidad).
+        builder.HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(x => x.ParejaId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Ciudad>()

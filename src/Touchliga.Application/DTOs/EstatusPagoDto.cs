@@ -9,6 +9,7 @@ public sealed class EstatusPagoDto
 {
     public long UsuarioId { get; set; }
     public string UsuarioNombre { get; set; } = string.Empty;
+    public string? Telefono { get; set; }
     public decimal Cuota { get; set; }
     public decimal TotalPagado { get; set; }
     public decimal SaldoPendiente { get; set; }

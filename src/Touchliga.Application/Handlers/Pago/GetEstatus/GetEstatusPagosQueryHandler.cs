@@ -45,6 +45,7 @@ public sealed class GetEstatusPagosQueryHandler
             {
                 UsuarioId = u.Id,
                 UsuarioNombre = $"{u.Nombre} {u.Apellidos}",
+                Telefono = u.Telefono,
                 Cuota = temporada.Cuota,
                 TotalPagado = totalPagado,
                 SaldoPendiente = Math.Max(0, temporada.Cuota - totalPagado),

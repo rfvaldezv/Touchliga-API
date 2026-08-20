@@ -13,6 +13,8 @@ public sealed class DetallePartidoDto
     public long PartidoId { get; set; }
     public string? EscudoLocalUrl { get; set; }
     public string? EscudoVisitanteUrl { get; set; }
+    public string LocalNombre { get; set; } = string.Empty;
+    public string VisitanteNombre { get; set; } = string.Empty;
     public long? EquipoGanadorReal { get; set; }
     public long? EquipoGanadorPronostico { get; set; }
     public bool EsDesempate { get; set; }

@@ -31,7 +31,9 @@ public sealed class RestablecerPasswordCommandHandler : IRequestHandler<Restable
         var usuario = await _usuarios.ObtenerPorIdAsync(request.UsuarioId)
             ?? throw new EntityNotFoundException("Usuario");
 
-        var nuevaPassword = GenerarPasswordAleatoria();
+        var nuevaPassword = string.IsNullOrWhiteSpace(request.NuevaPassword)
+            ? GenerarPasswordAleatoria()
+            : request.NuevaPassword.Trim();
         var hash = _passwordHasher.Hash(nuevaPassword);
 
         usuario.RestablecerPassword(hash, _currentUser.UserId);

@@ -8,6 +8,7 @@ public sealed class ContactoDto
 {
     public long UsuarioId { get; set; }
     public string Nombre { get; set; } = string.Empty;
+    public string? Telefono { get; set; }
     public string UltimoMensaje { get; set; } = string.Empty;
     public DateTime FechaUltimoMensaje { get; set; }
     public bool TieneNoLeidos { get; set; }

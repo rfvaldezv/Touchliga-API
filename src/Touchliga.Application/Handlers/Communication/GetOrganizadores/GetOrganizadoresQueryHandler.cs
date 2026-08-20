@@ -27,6 +27,7 @@ public sealed class GetOrganizadoresQueryHandler
             {
                 UsuarioId = u.Id,
                 Nombre = $"{u.Nombre} {u.Apellidos}",
+                Telefono = u.Telefono,
                 UltimoMensaje = string.Empty,
                 FechaUltimoMensaje = DateTime.MinValue,
                 TieneNoLeidos = false,

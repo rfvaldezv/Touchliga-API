@@ -57,4 +57,27 @@ public sealed class Pago : AggregateRoot
             Activo = true
         };
     }
+
+    /// <summary>Corrige un pago ya registrado -- pensado sobre todo
+    /// para arreglar datos que llegaron mal desde la migración del
+    /// sistema viejo.</summary>
+    public void Editar(
+        decimal monto,
+        string metodoPago,
+        DateTime fechaPago,
+        string? referencia,
+        long usuarioId)
+    {
+        if (monto <= 0)
+            throw new DomainException("El monto debe ser mayor a cero.");
+
+        if (string.IsNullOrWhiteSpace(metodoPago))
+            throw new DomainException("El método de pago es obligatorio.");
+
+        Monto = monto;
+        MetodoPago = metodoPago.Trim();
+        FechaPago = fechaPago;
+        Referencia = string.IsNullOrWhiteSpace(referencia) ? null : referencia.Trim();
+        MarcarModificado(usuarioId);
+    }
 }

@@ -8,6 +8,7 @@ using Touchliga.Infrastructure.Authentication;
 using Touchliga.Infrastructure.Email;
 using Touchliga.Infrastructure.Push;
 using Touchliga.Infrastructure.Pagos;
+using Touchliga.Infrastructure.Reportes;
 
 namespace Touchliga.Infrastructure;
 
@@ -34,6 +35,7 @@ public static class DependencyInjection
             configuration.GetSection(EmailOptions.SectionName));
 
         services.AddScoped<IEmailService, SmtpEmailService>();
+        services.AddScoped<IReporteAuditoriaPdfService, QuestPdfReporteAuditoriaService>();
 
         services.Configure<PushOptions>(
             configuration.GetSection(PushOptions.SectionName));

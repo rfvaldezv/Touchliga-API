@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Touchliga.Application.DTOs;
 using Touchliga.Application.Commands.Pago.Registrar;
 using Touchliga.Application.Commands.Pago.Eliminar;
+using Touchliga.Application.Commands.Pago.Editar;
 using Touchliga.Application.Commands.Pago.CrearSesionCheckout;
 using Touchliga.Application.Commands.Pago.RegistrarDesdeWebhook;
 using Touchliga.Application.Common.Interfaces;
@@ -72,6 +73,14 @@ public sealed class PagosController : ControllerBase
     public async Task<ActionResult<long>> Registrar([FromBody] RegistrarPagoCommand command)
     {
         return Ok(await _mediator.Send(command));
+    }
+
+    [Authorize(Roles = "Administrador")]
+    [HttpPut("{id:long}")]
+    public async Task<IActionResult> Editar(long id, [FromBody] EditarPagoCommand command)
+    {
+        await _mediator.Send(command with { Id = id });
+        return NoContent();
     }
 
     [Authorize(Roles = "Administrador")]

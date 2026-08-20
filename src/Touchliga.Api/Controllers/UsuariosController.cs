@@ -10,6 +10,11 @@ using Touchliga.Application.Users.Commands.EditarInfoUsuario;
 using Touchliga.Application.Users.Commands.RestablecerPassword;
 using Touchliga.Application.Users.Commands.CambiarMiPassword;
 using Touchliga.Application.Users.Commands.CambiarEstatusUsuario;
+using Touchliga.Application.Users.Commands.AsignarPareja;
+using Touchliga.Application.Users.Commands.AgregarCredencialAlterna;
+using Touchliga.Application.Users.Commands.QuitarCredencialAlterna;
+using Touchliga.Application.Users.Commands.VincularParticipanteExistente;
+using Touchliga.Application.Users.Commands.DesvincularParticipante;
 using Touchliga.Application.Users.Queries.GetUsuarios;
 using Touchliga.Application.Users.Queries.GetRoles;
 
@@ -70,13 +75,16 @@ public sealed class UsuariosController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Soporte: genera una contraseña temporal nueva y la
-    /// regresa en texto plano UNA sola vez para que el admin se la
-    /// comparta al participante.</summary>
+    /// <summary>Soporte: restablece la contraseña de un participante.
+    /// Si el admin manda "nuevaPassword" en el body se usa esa; si no,
+    /// se genera una aleatoria. Se regresa en texto plano UNA sola vez
+    /// para que el admin se la comparta al participante.</summary>
     [HttpPost("{usuarioId:long}/restablecer-password")]
-    public async Task<ActionResult<string>> RestablecerPassword(long usuarioId)
+    public async Task<ActionResult<string>> RestablecerPassword(
+        long usuarioId, [FromBody] RestablecerPasswordRequest? request)
     {
-        var nuevaPassword = await _mediator.Send(new RestablecerPasswordCommand(usuarioId));
+        var nuevaPassword = await _mediator.Send(
+            new RestablecerPasswordCommand(usuarioId, request?.NuevaPassword));
         return Ok(new { password = nuevaPassword });
     }
 
@@ -97,7 +105,55 @@ public sealed class UsuariosController : ControllerBase
         await _mediator.Send(command with { UsuarioId = usuarioId });
         return NoContent();
     }
+
+    /// <summary>Vincula (o desvincula, mandando parejaId: null) a un
+    /// participante con otro como pareja/equipo -- solo visual.</summary>
+    [HttpPut("{usuarioId:long}/pareja")]
+    public async Task<IActionResult> AsignarPareja(long usuarioId, [FromBody] AsignarParejaRequest body)
+    {
+        await _mediator.Send(new AsignarParejaCommand(usuarioId, body.ParejaId, body.NombreEquipo));
+        return NoContent();
+    }
+
+    /// <summary>Registra (o reemplaza) un segundo correo+contraseña
+    /// que puede iniciar sesión COMO este mismo participante -- mismos
+    /// pronósticos, mismos puntos, mismo Id (pensado para parejas/
+    /// familiares que juegan juntos).</summary>
+    [HttpPut("{usuarioId:long}/credencial-alterna")]
+    public async Task<IActionResult> AgregarCredencialAlterna(long usuarioId, [FromBody] AgregarCredencialAlternaRequest body)
+    {
+        await _mediator.Send(new AgregarCredencialAlternaCommand(usuarioId, body.Correo, body.Password));
+        return NoContent();
+    }
+
+    [HttpDelete("{usuarioId:long}/credencial-alterna")]
+    public async Task<IActionResult> QuitarCredencialAlterna(long usuarioId)
+    {
+        await _mediator.Send(new QuitarCredencialAlternaCommand(usuarioId));
+        return NoContent();
+    }
+
+    /// <summary>Toma a un participante YA REGISTRADO y lo vincula
+    /// como segundo acceso de otro, usando su correo+contraseña ya
+    /// existentes -- sin pedir datos nuevos.</summary>
+    [HttpPut("{usuarioObjetivoId:long}/vincular-existente/{usuarioAVincularId:long}")]
+    public async Task<IActionResult> VincularParticipanteExistente(long usuarioObjetivoId, long usuarioAVincularId)
+    {
+        await _mediator.Send(new VincularParticipanteExistenteCommand(usuarioObjetivoId, usuarioAVincularId));
+        return NoContent();
+    }
+
+    [HttpDelete("{usuarioObjetivoId:long}/vincular-existente/{usuarioVinculadoId:long}")]
+    public async Task<IActionResult> DesvincularParticipante(long usuarioObjetivoId, long usuarioVinculadoId)
+    {
+        await _mediator.Send(new DesvincularParticipanteCommand(usuarioObjetivoId, usuarioVinculadoId));
+        return NoContent();
+    }
 }
+
+public sealed record AsignarParejaRequest(long? ParejaId, string? NombreEquipo);
+
+public sealed record AgregarCredencialAlternaRequest(string Correo, string Password);
 
 public sealed record EditarInfoUsuarioRequest(
     string Nombre,
@@ -110,3 +166,5 @@ public sealed record EditarInfoUsuarioRequest(
 );
 
 public sealed record CambiarMiPasswordRequest(string PasswordActual, string PasswordNueva);
+
+public sealed record RestablecerPasswordRequest(string? NuevaPassword);

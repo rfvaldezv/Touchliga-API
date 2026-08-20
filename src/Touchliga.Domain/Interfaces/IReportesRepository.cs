@@ -4,6 +4,8 @@ public sealed record DetallePartidoResumen(
     long PartidoId,
     string? EscudoLocalUrl,
     string? EscudoVisitanteUrl,
+    string LocalNombre,
+    string VisitanteNombre,
     long? EquipoGanadorReal,
     long? EquipoGanadorPronostico,
     bool EsDesempate,
@@ -21,11 +23,13 @@ public sealed record DetalleJornadaParticipante(
     int Total);
 
 /// <summary>Puntos ya incluye el PuntosBono de esa jornada sumado.</summary>
-public sealed record PuntosPorJornada(long JornadaId, int Numero, int Puntos, int Calificados);
+public sealed record PuntosPorJornada(long JornadaId, int Numero, int Puntos, int Calificados, bool TodosLosPartidosConResultado);
 
 public sealed record RankingParticipante(
     long UsuarioId,
     string Nombre,
+    bool TienePareja,
+    string? NombreEquipo,
     IReadOnlyList<PuntosPorJornada> Jornadas,
     int TotalPuntos,
     int PronosticosCalificados,
@@ -46,6 +50,18 @@ public sealed record ResultadoEquipo(
     bool EsLocal,
     int GolesFavor,
     int GolesContra);
+
+/// <summary>Un participante activo y su avance de captura en UNA
+/// jornada -- incluye a quienes no han capturado NADA todavía (a
+/// diferencia de ObtenerDetalleJornadaAsync, que solo lista a
+/// quienes ya tienen al menos un pronóstico).</summary>
+public sealed record ParticipantePendiente(
+    long UsuarioId,
+    string Nombre,
+    string Correo,
+    string? Telefono,
+    int PartidosCapturados,
+    int TotalPartidos);
 
 /// <summary>
 /// Consultas de reporte (no son un repositorio de una entidad en
@@ -77,4 +93,33 @@ public interface IReportesRepository
         long equipoId,
         int cantidad,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Participantes activos con su avance de captura en UNA
+    /// jornada -- para saber a quién recordarle que le falta capturar.
+    /// Incluye a quienes no han hecho nada todavía.</summary>
+    Task<IReadOnlyList<ParticipantePendiente>> ObtenerParticipantesPendientesAsync(
+        long jornadaId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Todo lo necesario para armar el PDF de auditoría de
+    /// una jornada: número de la jornada, sus partidos (con nombres
+    /// de equipo), los participantes activos, y sus pronósticos.</summary>
+    Task<DatosReporteAuditoria> ObtenerDatosReporteAuditoriaAsync(
+        long jornadaId,
+        CancellationToken cancellationToken = default);
 }
+
+public sealed record DatosReporteAuditoria(
+    int JornadaNumero,
+    IReadOnlyList<PartidoParaAuditoria> Partidos,
+    IReadOnlyList<ParticipanteParaAuditoria> Participantes);
+
+public sealed record PartidoParaAuditoria(long PartidoId, string LocalNombre, string VisitanteNombre, bool EsDesempate);
+
+public sealed record ParticipanteParaAuditoria(long UsuarioId, string Nombre, IReadOnlyList<PronosticoParaAuditoria> Pronosticos);
+
+public sealed record PronosticoParaAuditoria(
+    long PartidoId,
+    string EquipoGanadorNombre,
+    int? PuntosTotalesPredichos,
+    int? DiferenciaPuntosPredicha);

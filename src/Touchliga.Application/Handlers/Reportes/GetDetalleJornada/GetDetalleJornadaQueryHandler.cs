@@ -31,6 +31,8 @@ public sealed class GetDetalleJornadaQueryHandler
                     PartidoId = p.PartidoId,
                     EscudoLocalUrl = p.EscudoLocalUrl,
                     EscudoVisitanteUrl = p.EscudoVisitanteUrl,
+                    LocalNombre = p.LocalNombre,
+                    VisitanteNombre = p.VisitanteNombre,
                     EquipoGanadorReal = p.EquipoGanadorReal,
                     EquipoGanadorPronostico = p.EquipoGanadorPronostico,
                     EsDesempate = p.EsDesempate,
